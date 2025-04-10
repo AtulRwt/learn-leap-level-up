@@ -37,68 +37,9 @@ const UserProfile = () => {
     ],
   };
 
-  // Mock data for uploads
-  const uploads = [
-    {
-      id: 1,
-      title: "Data Structures Notes",
-      type: "Notes",
-      date: "Mar 15, 2024",
-      status: "approved",
-      views: 0,
-      downloads: 0,
-    },
-    {
-      id: 2,
-      title: "Algorithm Design Assignment",
-      type: "Assignment",
-      date: "Mar 10, 2024",
-      status: "approved",
-      views: 0,
-      downloads: 0,
-    },
-    {
-      id: 3,
-      title: "Machine Learning PYQs",
-      type: "PYQs",
-      date: "Feb 28, 2024",
-      status: "pending",
-      views: 0,
-      downloads: 0,
-    },
-  ];
-
-  // Mock data for downloads
-  const downloads = [
-    {
-      id: 1,
-      title: "Advanced Database Systems Notes",
-      type: "Notes",
-      date: "Mar 18, 2024",
-      uploadedBy: "Professor Smith",
-    },
-    {
-      id: 2,
-      title: "Computer Networks Tutorial",
-      type: "Guide",
-      date: "Mar 12, 2024",
-      uploadedBy: "Tech Team",
-    },
-    {
-      id: 3,
-      title: "Java Programming Assignment",
-      type: "Assignment",
-      date: "Mar 5, 2024",
-      uploadedBy: "Programming Lab",
-    },
-    {
-      id: 4,
-      title: "Operating Systems PYQs",
-      type: "PYQs",
-      date: "Feb 25, 2024",
-      uploadedBy: "Exam Committee",
-    },
-  ];
+  // Mock data for uploads and downloads
+  const uploads = [];
+  const downloads = [];
 
   // Calculate progress percentage
   const progressPercentage = 0;
@@ -184,34 +125,7 @@ const UserProfile = () => {
                         key={upload.id}
                         className="border rounded-lg p-3 hover:bg-accent transition-colors"
                       >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">{upload.title}</div>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant="outline">{upload.type}</Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {upload.date}
-                              </span>
-                            </div>
-                          </div>
-                          <Badge
-                            className={
-                              upload.status === "approved"
-                                ? "bg-green-500"
-                                : "bg-amber-500"
-                            }
-                          >
-                            {upload.status === "approved"
-                              ? "Approved"
-                              : "Pending"}
-                          </Badge>
-                        </div>
-                        {upload.status === "approved" && (
-                          <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-                            <div>{upload.views} views</div>
-                            <div>{upload.downloads} downloads</div>
-                          </div>
-                        )}
+                        {/* Render upload details */}
                       </div>
                     ))
                   )}
@@ -222,18 +136,7 @@ const UserProfile = () => {
                       key={download.id}
                       className="border rounded-lg p-3 hover:bg-accent transition-colors"
                     >
-                      <div className="font-medium">{download.title}</div>
-                      <div className="flex justify-between items-center mt-1">
-                        <div className="flex gap-2">
-                          <Badge variant="outline">{download.type}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {download.date}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          by {download.uploadedBy}
-                        </span>
-                      </div>
+                      {/* Render download details */}
                     </div>
                   ))}
                 </TabsContent>

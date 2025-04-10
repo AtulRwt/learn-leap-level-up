@@ -5,36 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, Video, BookOpen } from "lucide-react";
 
 const PremiumContent = () => {
-  const resources = [
-    {
-      id: 1,
-      title: "Advanced Algorithm Analysis",
-      type: "Notes",
-      description: "Comprehensive notes on advanced algorithm techniques with examples",
-      icon: FileText,
-    },
-    {
-      id: 2,
-      title: "Database Systems Master Class",
-      type: "Video",
-      description: "In-depth video lectures on database optimization and architecture",
-      icon: Video,
-    },
-    {
-      id: 3,
-      title: "Machine Learning Interview Guide",
-      type: "Guide",
-      description: "Preparation guide for machine learning interviews at top companies",
-      icon: BookOpen,
-    },
-    {
-      id: 4,
-      title: "System Design for Scalable Applications",
-      type: "Notes",
-      description: "Learn how to design large-scale distributed systems",
-      icon: FileText,
-    },
-  ];
+  const resources = [];
 
   return (
     <MainLayout>
@@ -47,24 +18,11 @@ const PremiumContent = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {resources.map((resource) => (
-            <Card key={resource.id}>
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="bg-primary/10 p-2 rounded">
-                    <resource.icon className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-                <CardTitle className="mt-3 text-lg">{resource.title}</CardTitle>
-                <CardDescription>{resource.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground">
-                  Type: {resource.type}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {resources.length === 0 && (
+            <div className="col-span-full text-center py-10">
+              <p className="text-muted-foreground">No premium resources available at the moment.</p>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
