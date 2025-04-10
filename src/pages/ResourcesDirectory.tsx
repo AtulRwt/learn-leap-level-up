@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,11 +18,8 @@ interface Resource {
   external_url: string | null;
   content: string | null;
   created_at: string;
+  user_id: string;
   user_name: string;
-}
-
-interface ProfileJoin {
-  name: string;
 }
 
 const ResourcesDirectory = () => {
@@ -30,31 +28,33 @@ const ResourcesDirectory = () => {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['approved-resources'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, fetch all approved resources
+      const { data: resourcesData, error: resourcesError } = await supabase
         .from('resources')
-        .select(`
-          id,
-          title,
-          description,
-          resource_type,
-          file_url,
-          external_url,
-          content,
-          created_at,
-          profiles:user_id (name)
-        `)
+        .select('*')
         .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching resources:', error);
+      if (resourcesError) {
+        console.error('Error fetching resources:', resourcesError);
         return [];
       }
 
-      return (data || []).map(resource => ({
-        ...resource,
-        user_name: resource.profiles?.name || 'Unknown'
+      // For each resource, fetch the user's name from profiles
+      const resourcesWithUserNames = await Promise.all((resourcesData || []).map(async (resource) => {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', resource.user_id)
+          .single();
+
+        return {
+          ...resource,
+          user_name: profileData?.name || 'Unknown User'
+        };
       }));
+
+      return resourcesWithUserNames;
     }
   });
 

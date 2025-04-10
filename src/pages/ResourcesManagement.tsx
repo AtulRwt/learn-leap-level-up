@@ -37,17 +37,14 @@ interface Resource {
   id: string;
   title: string;
   resource_type: string;
-  description: string;
+  description: string | null;
   user_id: string;
   created_at: string;
   is_approved: boolean;
-  file_url?: string;
-  external_url?: string;
-  content?: string;
-  user_name?: string;
-  profiles?: {
-    name: string;
-  };
+  file_url: string | null;
+  external_url: string | null;
+  content: string | null;
+  user_name: string;
 }
 
 const ResourcesManagement = () => {
@@ -62,12 +59,10 @@ const ResourcesManagement = () => {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['resources'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, fetch all resources
+      const { data: resourcesData, error } = await supabase
         .from('resources')
-        .select(`
-          *,
-          profiles:user_id (name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -76,10 +71,21 @@ const ResourcesManagement = () => {
         return [];
       }
 
-      return (data || []).map(resource => ({
-        ...resource,
-        user_name: resource.profiles?.name || 'Unknown User'
+      // For each resource, fetch the user's name from profiles
+      const resourcesWithUserNames = await Promise.all((resourcesData || []).map(async (resource) => {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', resource.user_id)
+          .single();
+
+        return {
+          ...resource,
+          user_name: profileData?.name || 'Unknown User'
+        };
       }));
+
+      return resourcesWithUserNames;
     }
   });
 
