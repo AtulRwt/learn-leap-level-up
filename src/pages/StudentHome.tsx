@@ -1,4 +1,3 @@
-
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +8,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { BookOpen, Upload, FileText, Calendar, Award, TrendingUp } from "lucide-react";
+import { BookOpen, Upload, FileText, Calendar, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
@@ -99,9 +98,9 @@ const StudentHome = () => {
       href: "/exams",
     },
     {
-      title: "Premium Content",
-      description: "Exclusive learning resources",
-      icon: Award,
+      title: "Resources",
+      description: "Learning resources",
+      icon: BookOpen,
       href: "/premium",
     },
   ];
@@ -131,14 +130,11 @@ const StudentHome = () => {
   ];
 
   const progress = {
-    earned: user?.points || 0,
-    nextLevel: 200,
+    earned: 0,
+    nextLevel: 0,
   };
 
-  const progressPercentage = Math.min(
-    100,
-    Math.floor((progress.earned / progress.nextLevel) * 100)
-  );
+  const progressPercentage = 0;
 
   return (
     <MainLayout>
@@ -203,7 +199,7 @@ const StudentHome = () => {
                 <h4 className="text-sm font-medium">Achievements</h4>
                 <div className="flex flex-wrap gap-2">
                   <div className="border rounded-full px-3 py-1 text-xs flex items-center gap-1">
-                    <Upload className="h-3 w-3" /> 5 Uploads
+                    <Upload className="h-3 w-3" /> 0 Uploads
                   </div>
                   <div className="border rounded-full px-3 py-1 text-xs flex items-center gap-1">
                     <FileText className="h-3 w-3" /> Resource Star

@@ -7,7 +7,6 @@ import {
   Home, 
   Upload, 
   User, 
-  Crown, 
   BookOpen, 
   MessageSquare,
   ChevronLeft,
@@ -49,9 +48,9 @@ const Sidebar = ({ className }: SidebarProps) => {
       icon: User,
     },
     {
-      title: "Premium Content",
+      title: "Resources",
       href: "/premium",
-      icon: Crown,
+      icon: BookOpen,
     },
     {
       title: "Exam Prep",
@@ -71,9 +70,8 @@ const Sidebar = ({ className }: SidebarProps) => {
     },
     {
       title: "Settings",
-      href: "/settings",
+      href: "/profile",
       icon: Settings,
-      adminOnly: true,
     },
   ];
 

@@ -24,16 +24,15 @@ const UserProfile = () => {
 
   // Mock data for user stats
   const userStats = {
-    totalUploads: 15,
-    totalDownloads: 87,
-    points: user?.points || 0,
-    pointsToNextLevel: 200,
+    totalUploads: 0,
+    totalDownloads: 0,
+    points: 0,
+    pointsToNextLevel: 0,
     joinedDate: "Jan 15, 2024",
     achievements: [
-      { id: 1, name: "First Upload", description: "Upload your first resource", earned: true },
-      { id: 2, name: "Knowledge Sharer", description: "Upload 5 resources", earned: true },
-      { id: 3, name: "Resource Star", description: "Get 10 likes on your resources", earned: true },
-      { id: 4, name: "Premium Member", description: "Become a premium member", earned: user?.isPremium || false },
+      { id: 1, name: "First Upload", description: "Upload your first resource", earned: false },
+      { id: 2, name: "Knowledge Sharer", description: "Upload 5 resources", earned: false },
+      { id: 3, name: "Resource Star", description: "Get 10 likes on your resources", earned: false },
       { id: 5, name: "Power Contributor", description: "Upload 25 resources", earned: false },
     ],
   };
@@ -46,8 +45,8 @@ const UserProfile = () => {
       type: "Notes",
       date: "Mar 15, 2024",
       status: "approved",
-      views: 45,
-      downloads: 12,
+      views: 0,
+      downloads: 0,
     },
     {
       id: 2,
@@ -55,8 +54,8 @@ const UserProfile = () => {
       type: "Assignment",
       date: "Mar 10, 2024",
       status: "approved",
-      views: 23,
-      downloads: 8,
+      views: 0,
+      downloads: 0,
     },
     {
       id: 3,
@@ -102,10 +101,7 @@ const UserProfile = () => {
   ];
 
   // Calculate progress percentage
-  const progressPercentage = Math.min(
-    100,
-    Math.floor((userStats.points / userStats.pointsToNextLevel) * 100)
-  );
+  const progressPercentage = 0;
 
   return (
     <MainLayout>
@@ -137,9 +133,6 @@ const UserProfile = () => {
                   </Badge>
                   {user?.role === "admin" && (
                     <Badge className="bg-primary">Admin</Badge>
-                  )}
-                  {user?.isPremium && (
-                    <Badge className="bg-amber-500">Premium User</Badge>
                   )}
                 </div>
 

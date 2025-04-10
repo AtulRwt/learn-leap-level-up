@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
@@ -28,8 +29,8 @@ const MOCK_USERS = [
     email: "admin@example.com",
     password: "admin123",
     role: "admin" as UserRole,
-    isPremium: true,
-    points: 1000,
+    isPremium: false,
+    points: 0,
   },
   {
     id: "2",
@@ -38,7 +39,7 @@ const MOCK_USERS = [
     password: "student123",
     role: "student" as UserRole,
     isPremium: false,
-    points: 150,
+    points: 0,
   },
   {
     id: "3",
@@ -46,8 +47,8 @@ const MOCK_USERS = [
     email: "premium@example.com",
     password: "premium123",
     role: "student" as UserRole,
-    isPremium: true,
-    points: 500,
+    isPremium: false,
+    points: 0,
   },
 ];
 
