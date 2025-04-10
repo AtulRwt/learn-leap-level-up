@@ -1,4 +1,3 @@
-
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +41,46 @@ const QuickActionCard = ({
   );
 };
 
+const RecentResourceCard = ({ 
+  title, 
+  type, 
+  author,
+  date,
+}: { 
+  title: string; 
+  type: string; 
+  author: string;
+  date: string;
+}) => {
+  const getIcon = () => {
+    switch(type) {
+      case "Notes":
+        return <FileText className="h-4 w-4 text-blue-500" />;
+      case "Assignment":
+        return <BookOpen className="h-4 w-4 text-green-500" />;
+      case "PYQ":
+        return <Calendar className="h-4 w-4 text-purple-500" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-500" />;
+    }
+  };
+  
+  return (
+    <div className="flex items-center p-3 border rounded-lg hover:bg-accent transition-colors cursor-pointer">
+      <div className="mr-4 bg-accent p-2 rounded">
+        {getIcon()}
+      </div>
+      <div className="flex-1">
+        <h4 className="font-medium text-sm">{title}</h4>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-muted-foreground">{type}</span>
+          <span className="text-xs text-muted-foreground">{date}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StudentHome = () => {
   const { user } = useAuth();
 
@@ -63,6 +102,30 @@ const StudentHome = () => {
       description: "Learning resources",
       icon: BookOpen,
       href: "/premium",
+    },
+  ];
+
+  const recentResources = [
+    {
+      id: 1,
+      title: "Data Structures Notes",
+      type: "Notes",
+      author: "John Doe",
+      date: "2 days ago",
+    },
+    {
+      id: 2,
+      title: "Database Management Assignment",
+      type: "Assignment",
+      author: "Jane Smith",
+      date: "3 days ago",
+    },
+    {
+      id: 3,
+      title: "Operating Systems 2024 Exam",
+      type: "PYQ",
+      author: "Admin",
+      date: "1 week ago",
     },
   ];
 
@@ -104,6 +167,15 @@ const StudentHome = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {recentResources.map((resource) => (
+                <RecentResourceCard
+                  key={resource.id}
+                  title={resource.title}
+                  type={resource.type}
+                  author={resource.author}
+                  date={resource.date}
+                />
+              ))}
               <Button variant="outline" className="w-full mt-2">View All Resources</Button>
             </CardContent>
           </Card>
