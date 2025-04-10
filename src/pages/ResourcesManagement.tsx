@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +45,9 @@ interface Resource {
   external_url?: string;
   content?: string;
   user_name?: string;
+  profiles?: {
+    name: string;
+  };
 }
 
 const ResourcesManagement = () => {
@@ -74,7 +76,7 @@ const ResourcesManagement = () => {
         return [];
       }
 
-      return data.map(resource => ({
+      return (data || []).map(resource => ({
         ...resource,
         user_name: resource.profiles?.name || 'Unknown User'
       }));
@@ -105,7 +107,7 @@ const ResourcesManagement = () => {
       toast.success(`Resource ${data.approved ? 'approved' : 'rejected'}`);
       if (dialogOpen) setDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to update resource: ${error.message}`);
     }
   });
@@ -126,7 +128,7 @@ const ResourcesManagement = () => {
       toast.success('Resource deleted successfully');
       setDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to delete resource: ${error.message}`);
     }
   });

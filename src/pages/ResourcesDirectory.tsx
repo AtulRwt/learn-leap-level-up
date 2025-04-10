@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,6 +18,10 @@ interface Resource {
   content: string | null;
   created_at: string;
   user_name: string;
+}
+
+interface ProfileJoin {
+  name: string;
 }
 
 const ResourcesDirectory = () => {
@@ -48,18 +51,20 @@ const ResourcesDirectory = () => {
         return [];
       }
 
-      return data.map(resource => ({
+      return (data || []).map(resource => ({
         ...resource,
         user_name: resource.profiles?.name || 'Unknown'
       }));
     }
   });
 
-  const filteredResources = resources.filter(resource => 
-    resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredResources = () => {
+    return resources.filter(resource => 
+      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
 
   const getResourceBadge = (resource: Resource) => {
     if (resource.file_url) {
@@ -98,7 +103,6 @@ const ResourcesDirectory = () => {
           size="sm"
           onClick={() => {
             // For text resources, we could implement a modal to view the content
-            // This could be expanded later
             alert(resource.content);
           }}
         >
@@ -134,13 +138,13 @@ const ResourcesDirectory = () => {
           <div className="text-center py-10">
             <p>Loading resources...</p>
           </div>
-        ) : filteredResources.length === 0 ? (
+        ) : filteredResources().length === 0 ? (
           <div className="text-center py-10">
             <p className="text-muted-foreground">No resources found matching your search criteria.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((resource) => (
+            {filteredResources().map((resource) => (
               <Card key={resource.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
