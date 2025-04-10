@@ -5,55 +5,108 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Download, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
+interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  resource_type: string;
+  file_url: string | null;
+  external_url: string | null;
+  content: string | null;
+  created_at: string;
+  user_name: string;
+}
 
 const ResourcesDirectory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const resources = [
-    {
-      id: 1,
-      title: "Introduction to Programming",
-      category: "Computer Science",
-      level: "Beginner",
-      author: "John Doe",
-      downloads: 0,
-      tags: ["programming", "basics"]
-    },
-    {
-      id: 2,
-      title: "Data Structures Explained",
-      category: "Computer Science",
-      level: "Intermediate",
-      author: "Jane Smith",
-      downloads: 0,
-      tags: ["data structures", "algorithms"]
-    },
-    {
-      id: 3,
-      title: "Web Development Fundamentals",
-      category: "Web",
-      level: "Beginner",
-      author: "Alex Johnson",
-      downloads: 0,
-      tags: ["html", "css", "javascript"]
-    },
-    {
-      id: 4,
-      title: "Database Management Systems",
-      category: "Database",
-      level: "Advanced",
-      author: "Sarah Williams",
-      downloads: 0,
-      tags: ["sql", "nosql"]
+  const { data: resources = [], isLoading } = useQuery({
+    queryKey: ['approved-resources'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('resources')
+        .select(`
+          id,
+          title,
+          description,
+          resource_type,
+          file_url,
+          external_url,
+          content,
+          created_at,
+          profiles:user_id (name)
+        `)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching resources:', error);
+        return [];
+      }
+
+      return data.map(resource => ({
+        ...resource,
+        user_name: resource.profiles?.name || 'Unknown'
+      }));
     }
-  ];
+  });
 
   const filteredResources = resources.filter(resource => 
     resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getResourceBadge = (resource: Resource) => {
+    if (resource.file_url) {
+      return <Badge>File</Badge>;
+    } else if (resource.external_url) {
+      return <Badge>Link</Badge>;
+    } else {
+      return <Badge>Text</Badge>;
+    }
+  };
+
+  const getActionButton = (resource: Resource) => {
+    if (resource.file_url) {
+      return (
+        <Button 
+          size="sm"
+          className="flex items-center gap-1"
+          onClick={() => window.open(resource.file_url, '_blank')}
+        >
+          <Download className="h-4 w-4" /> Download
+        </Button>
+      );
+    } else if (resource.external_url) {
+      return (
+        <Button 
+          size="sm"
+          className="flex items-center gap-1"
+          onClick={() => window.open(resource.external_url, '_blank')}
+        >
+          <ExternalLink className="h-4 w-4" /> Open Link
+        </Button>
+      );
+    } else {
+      return (
+        <Button 
+          size="sm"
+          onClick={() => {
+            // For text resources, we could implement a modal to view the content
+            // This could be expanded later
+            alert(resource.content);
+          }}
+        >
+          View Content
+        </Button>
+      );
+    }
+  };
 
   return (
     <MainLayout>
@@ -77,41 +130,41 @@ const ResourcesDirectory = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredResources.length > 0 ? (
-            filteredResources.map((resource) => (
+        {isLoading ? (
+          <div className="text-center py-10">
+            <p>Loading resources...</p>
+          </div>
+        ) : filteredResources.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">No resources found matching your search criteria.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredResources.map((resource) => (
               <Card key={resource.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
-                  <div className="flex justify-between">
-                    <Badge>{resource.category}</Badge>
-                    <Badge variant="outline">{resource.level}</Badge>
+                  <div className="flex justify-between items-start">
+                    <Badge variant="outline">{resource.resource_type}</Badge>
+                    {getResourceBadge(resource)}
                   </div>
-                  <CardTitle className="mt-2">{resource.title}</CardTitle>
-                  <CardDescription>By {resource.author}</CardDescription>
+                  <CardTitle className="mt-2 line-clamp-2">{resource.title}</CardTitle>
+                  <CardDescription>By {resource.user_name}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {resource.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  {resource.description && (
+                    <p className="text-sm mb-4 line-clamp-3">{resource.description}</p>
+                  )}
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-sm text-muted-foreground">
-                      {resource.downloads} downloads
+                      {new Date(resource.created_at).toLocaleDateString()}
                     </span>
-                    <Button size="sm">View Details</Button>
+                    {getActionButton(resource)}
                   </div>
                 </CardContent>
               </Card>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">No resources found matching your search criteria.</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </MainLayout>
   );

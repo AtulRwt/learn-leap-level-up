@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,97 +31,105 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Resource {
-  id: number;
+  id: string;
   title: string;
-  type: string;
-  category: string;
-  user: string;
-  uploadDate: string;
-  status: "approved" | "pending" | "rejected";
-  downloads: number;
+  resource_type: string;
+  description: string;
+  user_id: string;
+  created_at: string;
+  is_approved: boolean;
+  file_url?: string;
+  external_url?: string;
+  content?: string;
+  user_name?: string;
 }
 
 const ResourcesManagement = () => {
-  const [resources, setResources] = useState<Resource[]>([
-    {
-      id: 1,
-      title: "Data Structures and Algorithms Notes",
-      type: "PDF",
-      category: "Notes",
-      user: "John Smith",
-      uploadDate: "2024-03-10",
-      status: "approved",
-      downloads: 45,
-    },
-    {
-      id: 2,
-      title: "Operating Systems Final Exam 2023",
-      type: "PDF",
-      category: "PYQs",
-      user: "Admin",
-      uploadDate: "2024-03-05",
-      status: "approved",
-      downloads: 120,
-    },
-    {
-      id: 3,
-      title: "Java Programming Assignment",
-      type: "ZIP",
-      category: "Assignments",
-      user: "Sarah Johnson",
-      uploadDate: "2024-03-15",
-      status: "pending",
-      downloads: 0,
-    },
-    {
-      id: 4,
-      title: "Database Systems Interview Guide",
-      type: "DOCX",
-      category: "Guides",
-      user: "Mike Chen",
-      uploadDate: "2024-03-12",
-      status: "pending",
-      downloads: 0,
-    },
-    {
-      id: 5,
-      title: "Web Development Tutorial",
-      type: "HTML",
-      category: "Guides",
-      user: "Lisa Wang",
-      uploadDate: "2024-03-08",
-      status: "rejected",
-      downloads: 0,
-    },
-    {
-      id: 6,
-      title: "Computer Networks Midterm 2023",
-      type: "PDF",
-      category: "PYQs",
-      user: "Admin",
-      uploadDate: "2024-02-25",
-      status: "approved",
-      downloads: 89,
-    },
-    {
-      id: 7,
-      title: "Artificial Intelligence Notes",
-      type: "PDF",
-      category: "Notes",
-      user: "Robert Johnson",
-      uploadDate: "2024-03-18",
-      status: "pending",
-      downloads: 0,
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<"view" | "delete">("view");
+  const queryClient = useQueryClient();
+  
+  // Fetch resources with user information
+  const { data: resources = [], isLoading } = useQuery({
+    queryKey: ['resources'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('resources')
+        .select(`
+          *,
+          profiles:user_id (name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast.error('Error fetching resources');
+        console.error('Error fetching resources:', error);
+        return [];
+      }
+
+      return data.map(resource => ({
+        ...resource,
+        user_name: resource.profiles?.name || 'Unknown User'
+      }));
+    }
+  });
+
+  // Approve resource mutation
+  const approveMutation = useMutation({
+    mutationFn: async ({ resourceId, approved }: { resourceId: string, approved: boolean }) => {
+      const { error } = await supabase
+        .from('resources')
+        .update({ is_approved: approved })
+        .eq('id', resourceId);
+        
+      if (error) throw error;
+      
+      // Create notification for the user
+      if (approved) {
+        await supabase.rpc('approve_resource', {
+          resource_id: resourceId
+        });
+      }
+      
+      return { resourceId, approved };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast.success(`Resource ${data.approved ? 'approved' : 'rejected'}`);
+      if (dialogOpen) setDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to update resource: ${error.message}`);
+    }
+  });
+
+  // Delete resource mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const { error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', resourceId);
+        
+      if (error) throw error;
+      return resourceId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast.success('Resource deleted successfully');
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete resource: ${error.message}`);
+    }
+  });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -134,11 +142,13 @@ const ResourcesManagement = () => {
   const filteredResources = resources
     .filter((resource) =>
       resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.category.toLowerCase().includes(searchTerm.toLowerCase())
+      (resource.user_name && resource.user_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (resource.resource_type && resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .filter((resource) =>
-      statusFilter === "all" ? true : resource.status === statusFilter
+      statusFilter === "all" ? true : 
+      statusFilter === "approved" ? resource.is_approved :
+      statusFilter === "pending" ? !resource.is_approved : false
     );
 
   const handleViewResource = (resource: Resource) => {
@@ -155,43 +165,27 @@ const ResourcesManagement = () => {
 
   const confirmDeleteResource = () => {
     if (selectedResource) {
-      setResources(resources.filter((r) => r.id !== selectedResource.id));
-      toast.success("Resource deleted successfully");
-      setDialogOpen(false);
+      deleteMutation.mutate(selectedResource.id);
     }
   };
 
-  const handleStatusChange = (resource: Resource, newStatus: "approved" | "rejected") => {
-    const updatedResources = resources.map((r) =>
-      r.id === resource.id ? { ...r, status: newStatus } : r
-    );
-    setResources(updatedResources);
-    
-    toast.success(`Resource ${newStatus === "approved" ? "approved" : "rejected"}`);
+  const handleStatusChange = (resource: Resource, approved: boolean) => {
+    approveMutation.mutate({ resourceId: resource.id, approved });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-            Approved
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-            Pending
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-            Rejected
-          </Badge>
-        );
-      default:
-        return null;
+  const getStatusBadge = (isApproved: boolean) => {
+    if (isApproved) {
+      return (
+        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+          Approved
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+          Pending
+        </Badge>
+      );
     }
   };
 
@@ -240,7 +234,6 @@ const ResourcesManagement = () => {
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -255,14 +248,19 @@ const ResourcesManagement = () => {
                 <TableHead>Uploaded By</TableHead>
                 <TableHead>Upload Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Downloads</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Loading resources...
+                  </TableCell>
+                </TableRow>
+              ) : filteredResources.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No resources found matching your criteria
                   </TableCell>
                 </TableRow>
@@ -271,13 +269,14 @@ const ResourcesManagement = () => {
                   <TableRow key={resource.id}>
                     <TableCell>
                       <div className="font-medium">{resource.title}</div>
-                      <div className="text-xs text-muted-foreground">{resource.type}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {resource.file_url ? 'File' : resource.external_url ? 'Link' : 'Text'}
+                      </div>
                     </TableCell>
-                    <TableCell>{resource.category}</TableCell>
-                    <TableCell>{resource.user}</TableCell>
-                    <TableCell>{formatDate(resource.uploadDate)}</TableCell>
-                    <TableCell>{getStatusBadge(resource.status)}</TableCell>
-                    <TableCell className="text-right">{resource.downloads}</TableCell>
+                    <TableCell>{resource.resource_type}</TableCell>
+                    <TableCell>{resource.user_name || 'Unknown'}</TableCell>
+                    <TableCell>{formatDate(resource.created_at)}</TableCell>
+                    <TableCell>{getStatusBadge(resource.is_approved)}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -296,26 +295,29 @@ const ResourcesManagement = () => {
                             <Eye className="mr-2 h-4 w-4" />
                             <span>View Details</span>
                           </DropdownMenuItem>
-                          {resource.status === "pending" && (
+                          {!resource.is_approved && (
                             <>
                               <DropdownMenuItem
                                 className="cursor-pointer flex items-center"
-                                onClick={() => handleStatusChange(resource, "approved")}
+                                onClick={() => handleStatusChange(resource, true)}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 <span>Approve</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="cursor-pointer flex items-center"
-                                onClick={() => handleStatusChange(resource, "rejected")}
+                                onClick={() => handleStatusChange(resource, false)}
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 <span>Reject</span>
                               </DropdownMenuItem>
                             </>
                           )}
-                          {resource.status === "approved" && (
-                            <DropdownMenuItem className="cursor-pointer flex items-center">
+                          {resource.file_url && (
+                            <DropdownMenuItem 
+                              className="cursor-pointer flex items-center"
+                              onClick={() => window.open(resource.file_url, '_blank')}
+                            >
                               <Download className="mr-2 h-4 w-4" />
                               <span>Download</span>
                             </DropdownMenuItem>
@@ -357,46 +359,82 @@ const ResourcesManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">Category</h4>
-                  <p>{selectedResource.category}</p>
+                  <p>{selectedResource.resource_type}</p>
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">Type</h4>
-                  <p>{selectedResource.type}</p>
+                  <p>{selectedResource.file_url ? 'File' : selectedResource.external_url ? 'Link' : 'Text'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">Uploaded By</h4>
-                  <p>{selectedResource.user}</p>
+                  <p>{selectedResource.user_name || 'Unknown'}</p>
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">Upload Date</h4>
-                  <p>{formatDate(selectedResource.uploadDate)}</p>
+                  <p>{formatDate(selectedResource.created_at)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold">Status</h4>
-                  <div>{getStatusBadge(selectedResource.status)}</div>
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-semibold">Downloads</h4>
-                  <p>{selectedResource.downloads}</p>
+                  <div>{getStatusBadge(selectedResource.is_approved)}</div>
                 </div>
               </div>
+              
+              {selectedResource.description && (
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold">Description</h4>
+                  <p className="whitespace-pre-wrap">{selectedResource.description}</p>
+                </div>
+              )}
+              
+              {selectedResource.content && (
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold">Content</h4>
+                  <div className="bg-muted p-3 rounded-md whitespace-pre-wrap">
+                    {selectedResource.content}
+                  </div>
+                </div>
+              )}
+              
+              {selectedResource.file_url && (
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold">File</h4>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.open(selectedResource.file_url, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" /> View File
+                  </Button>
+                </div>
+              )}
+              
+              {selectedResource.external_url && (
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold">External Link</h4>
+                  <a 
+                    href={selectedResource.external_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all"
+                  >
+                    {selectedResource.external_url}
+                  </a>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Close
               </Button>
-              {selectedResource.status === "pending" && (
+              {!selectedResource.is_approved && (
                 <>
                   <Button 
                     variant="default"
-                    onClick={() => {
-                      handleStatusChange(selectedResource, "approved");
-                      setDialogOpen(false);
-                    }}
+                    onClick={() => handleStatusChange(selectedResource, true)}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
@@ -404,10 +442,7 @@ const ResourcesManagement = () => {
                   </Button>
                   <Button 
                     variant="destructive"
-                    onClick={() => {
-                      handleStatusChange(selectedResource, "rejected");
-                      setDialogOpen(false);
-                    }}
+                    onClick={() => handleStatusChange(selectedResource, false)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
                     Reject
@@ -432,7 +467,7 @@ const ResourcesManagement = () => {
             <div className="py-4">
               <p className="font-medium">{selectedResource.title}</p>
               <p className="text-sm text-muted-foreground">
-                Uploaded by {selectedResource.user} on {formatDate(selectedResource.uploadDate)}
+                Uploaded by {selectedResource.user_name || 'Unknown'} on {formatDate(selectedResource.created_at)}
               </p>
             </div>
             <DialogFooter>
