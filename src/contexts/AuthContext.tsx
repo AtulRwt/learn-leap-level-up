@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 
 export type UserRole = "student" | "admin";
 
@@ -126,24 +125,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        if (profile) {
-          setUser({
-            id: profile.id,
-            name: profile.name || 'User',
-            email: profile.email || data.user.email || '',
-            role: profile.role as UserRole,
-            isPremium: false,
-            points: profile.points || 0
-          });
-          
-          toast.success(`Welcome back, ${profile.name || 'User'}!`);
-          
-          // Redirect based on role
-          if (profile.role === "admin") {
-            navigate("/admin");
-          } else {
-            navigate("/home");
-          }
+        setUser({
+          id: profile.id,
+          name: profile.name || 'User',
+          email: profile.email || data.user.email || '',
+          role: profile.role as UserRole,
+          isPremium: false,
+          points: profile.points || 0
+        });
+        
+        toast.success(`Welcome back, ${profile.name || 'User'}!`);
+        
+        // Redirect based on role
+        if (profile.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/home");
         }
       }
     } catch (error) {

@@ -18,7 +18,6 @@ interface Resource {
   external_url: string | null;
   content: string | null;
   created_at: string;
-  user_id: string;
   user_name: string;
 }
 
@@ -28,43 +27,39 @@ const ResourcesDirectory = () => {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['approved-resources'],
     queryFn: async () => {
-      // First, fetch all approved resources
-      const { data: resourcesData, error: resourcesError } = await supabase
+      const { data, error } = await supabase
         .from('resources')
-        .select('*')
+        .select(`
+          id,
+          title,
+          description,
+          resource_type,
+          file_url,
+          external_url,
+          content,
+          created_at,
+          profiles:user_id (name)
+        `)
         .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
-      if (resourcesError) {
-        console.error('Error fetching resources:', resourcesError);
+      if (error) {
+        console.error('Error fetching resources:', error);
         return [];
       }
 
-      // For each resource, fetch the user's name from profiles
-      const resourcesWithUserNames = await Promise.all((resourcesData || []).map(async (resource) => {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', resource.user_id)
-          .single();
-
-        return {
-          ...resource,
-          user_name: profileData?.name || 'Unknown User'
-        };
+      return data.map(resource => ({
+        ...resource,
+        user_name: resource.profiles?.name || 'Unknown'
       }));
-
-      return resourcesWithUserNames;
     }
   });
 
-  const filteredResources = () => {
-    return resources.filter(resource => 
-      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
+  const filteredResources = resources.filter(resource => 
+    resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    resource.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    resource.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getResourceBadge = (resource: Resource) => {
     if (resource.file_url) {
@@ -103,6 +98,7 @@ const ResourcesDirectory = () => {
           size="sm"
           onClick={() => {
             // For text resources, we could implement a modal to view the content
+            // This could be expanded later
             alert(resource.content);
           }}
         >
@@ -138,13 +134,13 @@ const ResourcesDirectory = () => {
           <div className="text-center py-10">
             <p>Loading resources...</p>
           </div>
-        ) : filteredResources().length === 0 ? (
+        ) : filteredResources.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-muted-foreground">No resources found matching your search criteria.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources().map((resource) => (
+            {filteredResources.map((resource) => (
               <Card key={resource.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">

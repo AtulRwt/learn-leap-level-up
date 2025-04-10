@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -57,39 +58,31 @@ const UploadResource = () => {
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
         
-        try {
-          const { data, error } = await supabase.storage
-            .from('resources')
-            .upload(filePath, file);
-            
-          if (error) throw new Error(`Error uploading file: ${error.message}`);
+        const { data, error } = await supabase.storage
+          .from('resources')
+          .upload(filePath, file);
           
-          // Get the public URL for the file
-          const { data: urlData } = supabase.storage
-            .from('resources')
-            .getPublicUrl(filePath);
-            
-          fileUrl = urlData.publicUrl;
-        } catch (error) {
-          console.error('File upload error:', error);
-          throw new Error('Failed to upload file');
-        }
+        if (error) throw new Error(`Error uploading file: ${error.message}`);
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('resources')
+          .getPublicUrl(filePath);
+          
+        fileUrl = publicUrl;
       }
       
       // Create resource entry
-      const resourceData = {
-        title,
-        description,
-        resource_type: type,
-        user_id: user.id,
-        content: uploadType === 'text' ? textContent : null,
-        file_url: uploadType === 'file' ? fileUrl : null,
-        external_url: uploadType === 'link' ? link : null,
-      };
-      
       const { data, error } = await supabase
         .from('resources')
-        .insert(resourceData)
+        .insert({
+          title,
+          description,
+          resource_type: type,
+          user_id: user.id,
+          content: uploadType === 'text' ? textContent : null,
+          file_url: uploadType === 'file' ? fileUrl : null,
+          external_url: uploadType === 'link' ? link : null,
+        })
         .select();
         
       if (error) throw error;

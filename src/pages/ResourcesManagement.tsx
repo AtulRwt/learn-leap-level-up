@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,14 +38,14 @@ interface Resource {
   id: string;
   title: string;
   resource_type: string;
-  description: string | null;
+  description: string;
   user_id: string;
   created_at: string;
   is_approved: boolean;
-  file_url: string | null;
-  external_url: string | null;
-  content: string | null;
-  user_name: string;
+  file_url?: string;
+  external_url?: string;
+  content?: string;
+  user_name?: string;
 }
 
 const ResourcesManagement = () => {
@@ -59,10 +60,12 @@ const ResourcesManagement = () => {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['resources'],
     queryFn: async () => {
-      // First, fetch all resources
-      const { data: resourcesData, error } = await supabase
+      const { data, error } = await supabase
         .from('resources')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (name)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -71,21 +74,10 @@ const ResourcesManagement = () => {
         return [];
       }
 
-      // For each resource, fetch the user's name from profiles
-      const resourcesWithUserNames = await Promise.all((resourcesData || []).map(async (resource) => {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', resource.user_id)
-          .single();
-
-        return {
-          ...resource,
-          user_name: profileData?.name || 'Unknown User'
-        };
+      return data.map(resource => ({
+        ...resource,
+        user_name: resource.profiles?.name || 'Unknown User'
       }));
-
-      return resourcesWithUserNames;
     }
   });
 
@@ -113,7 +105,7 @@ const ResourcesManagement = () => {
       toast.success(`Resource ${data.approved ? 'approved' : 'rejected'}`);
       if (dialogOpen) setDialogOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(`Failed to update resource: ${error.message}`);
     }
   });
@@ -134,7 +126,7 @@ const ResourcesManagement = () => {
       toast.success('Resource deleted successfully');
       setDialogOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(`Failed to delete resource: ${error.message}`);
     }
   });
