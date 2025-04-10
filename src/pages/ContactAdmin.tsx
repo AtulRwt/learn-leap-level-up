@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Send, Clock, CheckCircle2 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 
 interface Message {
   id: number;
@@ -24,7 +24,6 @@ const ContactAdmin = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Mock message history
   const [messageHistory, setMessageHistory] = useState<Message[]>([
     {
       id: 1,
@@ -52,9 +51,7 @@ const ContactAdmin = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
-      // Add message to history
       const newMessage: Message = {
         id: Date.now(),
         subject,
@@ -69,7 +66,6 @@ const ContactAdmin = () => {
       
       setMessageHistory([newMessage, ...messageHistory]);
       
-      // Reset form
       setSubject("");
       setMessage("");
       setIsSubmitting(false);

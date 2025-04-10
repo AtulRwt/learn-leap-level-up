@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, MoreHorizontal, CheckCircle, XCircle, Eye, Download, Trash2 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,
