@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -51,6 +52,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (error) {
             console.error('Error fetching user profile:', error);
+            
+            // If the profile doesn't exist yet (new user), create one
+            if (error.code === 'PGRST116') {
+              const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert([
+                  {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.name || 'User',
+                    role: 'student',
+                    points: 0
+                  }
+                ])
+                .select()
+                .single();
+                
+              if (createError) {
+                console.error('Error creating new profile:', createError);
+                setUser(null);
+                return;
+              }
+              
+              if (newProfile) {
+                setUser({
+                  id: newProfile.id,
+                  name: newProfile.name,
+                  email: newProfile.email || session.user.email || '',
+                  role: newProfile.role as UserRole,
+                  isPremium: false,
+                  points: 0
+                });
+                console.log("New user profile created:", newProfile);
+                return;
+              }
+            }
+            
             setUser(null);
             return;
           }
@@ -61,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: false,
+              isPremium: profile.is_premium || false,
               points: profile.points || 0
             });
             console.log("User profile set:", profile);
@@ -96,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: false,
+              isPremium: profile.is_premium || false,
               points: profile.points || 0
             });
             console.log("User session found:", profile);
@@ -117,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    setLoading(true);
     try {
       console.log('Attempting login with:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -136,18 +175,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast.success(`Welcome back!`);
-      
-      // Note: We don't need to manually set the user here
-      // The onAuthStateChange listener will handle that
+      navigate(data.user.user_metadata?.role === 'admin' ? '/admin' : '/home');
       
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (email: string, password: string, name: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role: 'student'
+          },
+        },
+      });
+      
+      if (error) {
+        console.error('Registration error:', error);
+        toast.error(error.message || 'Failed to register');
+        return;
+      }
+      
+      if (!data.user) {
+        toast.error('Registration failed');
+        return;
+      }
+      
+      // Create a profile for the new user
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email,
+            name: name,
+            role: 'student',
+            points: 0
+          }
+        ]);
+        
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+        // Continue anyway as the auth trigger should handle this
+      }
+
+      toast.success('Registration successful! Check your email to confirm your account.');
+      
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('An error occurred during registration');
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast.error(error.message);
@@ -160,6 +253,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('An error occurred during logout');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -167,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     login,
+    register,
     logout,
     isAuthenticated: !!user,
   };

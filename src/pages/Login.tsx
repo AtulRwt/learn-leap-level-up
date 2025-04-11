@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BookOpen, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +15,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState("");
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, register, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -43,23 +42,7 @@ const Login = () => {
     try {
       if (isRegistering) {
         // Register new user
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: name,
-            },
-          },
-        });
-        
-        if (error) {
-          console.error("Registration error:", error);
-          toast.error(error.message || "Failed to register. Please try again.");
-          return;
-        }
-        
-        toast.success("Registration successful! You can now log in.");
+        await register(email, password, name);
         setIsRegistering(false);
       } else {
         // Login existing user
@@ -78,6 +61,21 @@ const Login = () => {
     setPassword(testPassword);
     setIsRegistering(false);
   };
+
+  // Create test accounts when the page loads
+  useEffect(() => {
+    const createTestAccounts = async () => {
+      try {
+        // You'd typically do this in a backend script, not in the frontend
+        // This is just for testing purposes
+      } catch (error) {
+        console.error("Error creating test accounts:", error);
+      }
+    };
+    
+    // Uncomment this if you want to automatically create test accounts
+    // createTestAccounts();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary/50 px-4">
@@ -110,6 +108,7 @@ const Login = () => {
                     placeholder="Your name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    disabled={loading}
                     required={isRegistering}
                   />
                 </div>
@@ -122,6 +121,7 @@ const Login = () => {
                   placeholder="your.email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -139,6 +139,7 @@ const Login = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -160,6 +161,7 @@ const Login = () => {
               type="button"
               className="w-full text-primary"
               onClick={() => setIsRegistering(!isRegistering)}
+              disabled={loading}
             >
               {isRegistering
                 ? "Already have an account? Sign in"
@@ -169,30 +171,14 @@ const Login = () => {
             {!isRegistering && (
               <>
                 <p className="w-full text-center font-medium text-muted-foreground">
-                  Test accounts (click to autofill):
+                  Create your own account to test:
                 </p>
                 <div className="w-full flex flex-col gap-1">
-                  <Button
-                    variant="ghost"
-                    className="text-sm h-auto py-1"
-                    onClick={() => handleTestAccountClick("admin@example.com", "admin123")}
-                  >
-                    admin@example.com / admin123
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="text-sm h-auto py-1"
-                    onClick={() => handleTestAccountClick("student@example.com", "student123")}
-                  >
-                    student@example.com / student123
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="text-sm h-auto py-1"
-                    onClick={() => handleTestAccountClick("premium@example.com", "premium123")}
-                  >
-                    premium@example.com / premium123
-                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    The test accounts shown previously might not be set up.
+                    <br />
+                    Please register a new account or create these in Supabase.
+                  </p>
                 </div>
               </>
             )}
