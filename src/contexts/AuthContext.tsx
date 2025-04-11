@@ -103,17 +103,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Attempting login with:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        toast.error(error.message);
+        console.error('Login error details:', error);
+        toast.error(error.message || 'Invalid login credentials');
         return;
       }
       
       if (data.user) {
+        // Check if this user has a profile already
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -121,23 +124,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
           
         if (profileError) {
-          toast.error('Error fetching user profile');
-          return;
+          console.error('Error fetching user profile:', profileError);
+          // If profile doesn't exist, create one (this might happen for new users)
+          if (profileError.code === 'PGRST116') {
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert([{ 
+                id: data.user.id,
+                email: data.user.email,
+                name: data.user.user_metadata.full_name || 'User',
+                role: 'student'
+              }]);
+              
+            if (createError) {
+              console.error('Error creating profile:', createError);
+              toast.error('Error setting up user profile');
+              return;
+            }
+            
+            // Fetch the newly created profile
+            const { data: newProfile, error: newProfileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+              
+            if (newProfileError || !newProfile) {
+              toast.error('Error fetching new profile');
+              return;
+            }
+            
+            setUser({
+              id: newProfile.id,
+              name: newProfile.name || 'User',
+              email: newProfile.email || data.user.email || '',
+              role: newProfile.role as UserRole,
+              isPremium: false,
+              points: newProfile.points || 0
+            });
+          } else {
+            toast.error('Error fetching user profile');
+            return;
+          }
+        } else if (profile) {
+          setUser({
+            id: profile.id,
+            name: profile.name || 'User',
+            email: profile.email || data.user.email || '',
+            role: profile.role as UserRole,
+            isPremium: false,
+            points: profile.points || 0
+          });
         }
         
-        setUser({
-          id: profile.id,
-          name: profile.name || 'User',
-          email: profile.email || data.user.email || '',
-          role: profile.role as UserRole,
-          isPremium: false,
-          points: profile.points || 0
-        });
-        
-        toast.success(`Welcome back, ${profile.name || 'User'}!`);
+        toast.success(`Welcome back, ${user?.name || 'User'}!`);
         
         // Redirect based on role
-        if (profile.role === "admin") {
+        if (user?.role === "admin") {
           navigate("/admin");
         } else {
           navigate("/home");

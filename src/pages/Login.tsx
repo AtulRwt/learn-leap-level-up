@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/lib/toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
@@ -21,9 +23,28 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
+    
+    if (!email || !password) {
+      toast.error("Please enter both email and password");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Failed to login. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestAccountClick = (testEmail: string, testPassword: string) => {
+    setEmail(testEmail);
+    setPassword(testPassword);
   };
 
   return (
@@ -70,18 +91,43 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Sign in
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="text-center text-sm">
-            <p className="w-full text-center text-sm text-muted-foreground">
-              Test accounts:<br />
-              <span className="font-semibold">admin@example.com / admin123</span><br />
-              <span className="font-semibold">student@example.com / student123</span><br />
-              <span className="font-semibold">premium@example.com / premium123</span>
-            </p>
+          <CardFooter className="flex flex-col space-y-2 text-sm">
+            <p className="w-full text-center font-medium text-muted-foreground">Test accounts (click to autofill):</p>
+            <div className="w-full flex flex-col gap-1">
+              <Button 
+                variant="ghost" 
+                className="text-sm h-auto py-1" 
+                onClick={() => handleTestAccountClick("admin@example.com", "admin123")}
+              >
+                admin@example.com / admin123
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="text-sm h-auto py-1" 
+                onClick={() => handleTestAccountClick("student@example.com", "student123")}
+              >
+                student@example.com / student123
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="text-sm h-auto py-1" 
+                onClick={() => handleTestAccountClick("premium@example.com", "premium123")}
+              >
+                premium@example.com / premium123
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </div>
