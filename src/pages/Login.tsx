@@ -43,39 +43,16 @@ const Login = () => {
       if (isRegistering) {
         // Register new user
         await register(email, password, name);
-        setIsRegistering(false);
       } else {
         // Login existing user
         await login(email, password);
       }
     } catch (error) {
       console.error("Authentication error:", error);
-      toast.error("Authentication failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
-
-  const handleTestAccountClick = (testEmail: string, testPassword: string) => {
-    setEmail(testEmail);
-    setPassword(testPassword);
-    setIsRegistering(false);
-  };
-
-  // Create test accounts when the page loads
-  useEffect(() => {
-    const createTestAccounts = async () => {
-      try {
-        // You'd typically do this in a backend script, not in the frontend
-        // This is just for testing purposes
-      } catch (error) {
-        console.error("Error creating test accounts:", error);
-      }
-    };
-    
-    // Uncomment this if you want to automatically create test accounts
-    // createTestAccounts();
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary/50 px-4">
@@ -169,18 +146,17 @@ const Login = () => {
             </Button>
             
             {!isRegistering && (
-              <>
-                <p className="w-full text-center font-medium text-muted-foreground">
-                  Create your own account to test:
-                </p>
-                <div className="w-full flex flex-col gap-1">
-                  <p className="text-xs text-center text-muted-foreground">
-                    The test accounts shown previously might not be set up.
-                    <br />
-                    Please register a new account or create these in Supabase.
-                  </p>
+              <div className="w-full text-center">
+                <p className="font-medium text-muted-foreground mb-2">Test Accounts:</p>
+                <div className="flex flex-col gap-2">
+                  <div className="p-2 border rounded text-xs">
+                    <p><strong>Student:</strong> student@example.com / password123</p>
+                  </div>
+                  <div className="p-2 border rounded text-xs">
+                    <strong>Admin:</strong> admin@example.com / password123
+                  </div>
                 </div>
-              </>
+              </div>
             )}
           </CardFooter>
         </Card>

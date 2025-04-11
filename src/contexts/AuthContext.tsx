@@ -11,8 +11,9 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  isPremium: boolean;
+  isPremium: boolean; // We'll keep this but derive it from other data
   points: number;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
@@ -81,8 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   name: newProfile.name,
                   email: newProfile.email || session.user.email || '',
                   role: newProfile.role as UserRole,
-                  isPremium: false, // Default value since is_premium doesn't exist in database
-                  points: newProfile.points || 0
+                  isPremium: false, // Default since we don't have is_premium column
+                  points: newProfile.points || 0,
+                  avatar_url: newProfile.avatar_url
                 });
                 console.log("New user profile created:", newProfile);
                 return;
@@ -99,8 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: false, // Since is_premium doesn't exist in database, we set a default
-              points: profile.points || 0
+              isPremium: false, // We don't have is_premium in the database, so default to false
+              points: profile.points || 0,
+              avatar_url: profile.avatar_url
             });
             console.log("User profile set:", profile);
           }
@@ -134,8 +137,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: false, // Default value since is_premium doesn't exist
-              points: profile.points || 0
+              isPremium: false, // We don't have is_premium in the database
+              points: profile.points || 0,
+              avatar_url: profile.avatar_url
             });
             console.log("User session found:", profile);
           }
