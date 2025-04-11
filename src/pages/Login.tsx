@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,16 +8,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BookOpen, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState("");
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       navigate(user?.role === "admin" ? "/admin" : "/home");
     }
@@ -31,12 +34,40 @@ const Login = () => {
       return;
     }
     
+    if (isRegistering && !name) {
+      toast.error("Please enter your name");
+      return;
+    }
+    
     setLoading(true);
     try {
-      await login(email, password);
+      if (isRegistering) {
+        // Register new user
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: name,
+            },
+          },
+        });
+        
+        if (error) {
+          console.error("Registration error:", error);
+          toast.error(error.message || "Failed to register. Please try again.");
+          return;
+        }
+        
+        toast.success("Registration successful! You can now log in.");
+        setIsRegistering(false);
+      } else {
+        // Login existing user
+        await login(email, password);
+      }
     } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Failed to login. Please check your credentials.");
+      console.error("Authentication error:", error);
+      toast.error("Authentication failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -45,6 +76,7 @@ const Login = () => {
   const handleTestAccountClick = (testEmail: string, testPassword: string) => {
     setEmail(testEmail);
     setPassword(testPassword);
+    setIsRegistering(false);
   };
 
   return (
@@ -58,13 +90,30 @@ const Login = () => {
         </div>
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              {isRegistering ? "Create an account" : "Welcome back"}
+            </CardTitle>
             <CardDescription className="text-center">
-              Sign in to access your account
+              {isRegistering 
+                ? "Sign up to start learning" 
+                : "Sign in to access your account"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isRegistering && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={isRegistering}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -79,9 +128,11 @@ const Login = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </a>
+                  {!isRegistering && (
+                    <a href="#" className="text-sm text-primary hover:underline">
+                      Forgot password?
+                    </a>
+                  )}
                 </div>
                 <Input
                   id="password"
@@ -95,39 +146,56 @@ const Login = () => {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
+                    {isRegistering ? "Creating account..." : "Signing in..."}
                   </>
                 ) : (
-                  "Sign in"
+                  isRegistering ? "Sign up" : "Sign in"
                 )}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-2 text-sm">
-            <p className="w-full text-center font-medium text-muted-foreground">Test accounts (click to autofill):</p>
-            <div className="w-full flex flex-col gap-1">
-              <Button 
-                variant="ghost" 
-                className="text-sm h-auto py-1" 
-                onClick={() => handleTestAccountClick("admin@example.com", "admin123")}
-              >
-                admin@example.com / admin123
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-sm h-auto py-1" 
-                onClick={() => handleTestAccountClick("student@example.com", "student123")}
-              >
-                student@example.com / student123
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-sm h-auto py-1" 
-                onClick={() => handleTestAccountClick("premium@example.com", "premium123")}
-              >
-                premium@example.com / premium123
-              </Button>
-            </div>
+          <CardFooter className="flex flex-col space-y-4 text-sm">
+            <Button
+              variant="ghost"
+              type="button"
+              className="w-full text-primary"
+              onClick={() => setIsRegistering(!isRegistering)}
+            >
+              {isRegistering
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
+            </Button>
+            
+            {!isRegistering && (
+              <>
+                <p className="w-full text-center font-medium text-muted-foreground">
+                  Test accounts (click to autofill):
+                </p>
+                <div className="w-full flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    className="text-sm h-auto py-1"
+                    onClick={() => handleTestAccountClick("admin@example.com", "admin123")}
+                  >
+                    admin@example.com / admin123
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="text-sm h-auto py-1"
+                    onClick={() => handleTestAccountClick("student@example.com", "student123")}
+                  >
+                    student@example.com / student123
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="text-sm h-auto py-1"
+                    onClick={() => handleTestAccountClick("premium@example.com", "premium123")}
+                  >
+                    premium@example.com / premium123
+                  </Button>
+                </div>
+              </>
+            )}
           </CardFooter>
         </Card>
       </div>
