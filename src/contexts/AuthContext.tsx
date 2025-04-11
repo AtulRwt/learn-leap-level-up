@@ -81,8 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   name: newProfile.name,
                   email: newProfile.email || session.user.email || '',
                   role: newProfile.role as UserRole,
-                  isPremium: false,
-                  points: 0
+                  isPremium: false, // Default value since is_premium doesn't exist in database
+                  points: newProfile.points || 0
                 });
                 console.log("New user profile created:", newProfile);
                 return;
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: profile.is_premium || false,
+              isPremium: false, // Since is_premium doesn't exist in database, we set a default
               points: profile.points || 0
             });
             console.log("User profile set:", profile);
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'User',
               email: profile.email || session.user.email || '',
               role: profile.role as UserRole,
-              isPremium: profile.is_premium || false,
+              isPremium: false, // Default value since is_premium doesn't exist
               points: profile.points || 0
             });
             console.log("User session found:", profile);
