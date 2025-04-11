@@ -1,35 +1,10 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
-
-export type UserRole = "student" | "admin";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  isPremium: boolean; // We'll keep this but derive it from other data
-  points: number;
-  avatar_url?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
-}
-
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
-
-export function useAuth() {
-  return useContext(AuthContext);
-}
+import { AuthContext } from "@/contexts/AuthContext";
+import { User, UserRole } from "@/types/auth";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
