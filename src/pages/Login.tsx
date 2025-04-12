@@ -7,11 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/lib/toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isAuthenticated, user } = useAuth();
+  const [name, setName] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, register, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -21,9 +25,30 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
+    setIsLoading(true);
+    
+    try {
+      if (isRegistering) {
+        if (!name.trim()) {
+          toast.error("Please enter your name");
+          setIsLoading(false);
+          return;
+        }
+        await register(email, password, name);
+      } else {
+        await login(email, password);
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsRegistering(!isRegistering);
   };
 
   return (
@@ -37,13 +62,29 @@ const Login = () => {
         </div>
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              {isRegistering ? "Create an account" : "Welcome back"}
+            </CardTitle>
             <CardDescription className="text-center">
-              Sign in to access your account
+              {isRegistering 
+                ? "Enter your details to register" 
+                : "Sign in to access your account"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isRegistering && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -58,9 +99,11 @@ const Login = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </a>
+                  {!isRegistering && (
+                    <a href="#" className="text-sm text-primary hover:underline">
+                      Forgot password?
+                    </a>
+                  )}
                 </div>
                 <Input
                   id="password"
@@ -70,18 +113,47 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Sign in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading 
+                  ? (isRegistering ? "Creating Account..." : "Signing in...") 
+                  : (isRegistering ? "Create Account" : "Sign in")}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="text-center text-sm">
-            <p className="w-full text-center text-sm text-muted-foreground">
-              Test accounts:<br />
-              <span className="font-semibold">admin@example.com / admin123</span><br />
-              <span className="font-semibold">student@example.com / student123</span><br />
-              <span className="font-semibold">premium@example.com / premium123</span>
-            </p>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm">
+              {isRegistering ? (
+                <p>
+                  Already have an account?{" "}
+                  <button 
+                    type="button" 
+                    onClick={toggleMode}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Don't have an account?{" "}
+                  <button 
+                    type="button" 
+                    onClick={toggleMode}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Create one
+                  </button>
+                </p>
+              )}
+            </div>
+            {!isRegistering && (
+              <p className="w-full text-center text-sm text-muted-foreground">
+                Test accounts:<br />
+                <span className="font-semibold">admin@example.com / admin123</span><br />
+                <span className="font-semibold">student@example.com / student123</span><br />
+                <span className="font-semibold">premium@example.com / premium123</span>
+              </p>
+            )}
           </CardFooter>
         </Card>
       </div>
