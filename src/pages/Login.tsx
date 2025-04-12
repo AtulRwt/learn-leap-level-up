@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BookOpen, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
+import { useSupabaseStatus } from "@/hooks/useSupabaseStatus";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -17,14 +18,24 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, register, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const { status } = useSupabaseStatus();
 
-  // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      console.log("User authenticated as:", user?.role, user?.email);
-      navigate(user?.role === "admin" ? "/admin" : "/home");
+  // Improved redirection logic with debugging
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("Redirecting authenticated user:", user.role, user.email);
+      const redirectPath = user.role === "admin" ? "/admin" : "/home";
+      console.log("Redirecting to:", redirectPath);
+      navigate(redirectPath);
     }
   }, [isAuthenticated, navigate, user]);
+
+  // Check database connection status
+  useEffect(() => {
+    if (status === 'error') {
+      toast.error("Unable to connect to the database. Please try again later.");
+    }
+  }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +63,14 @@ const Login = () => {
       } else {
         console.log("Submitting login form with:", email);
         await login(email, password);
-        // Login success will be handled by the auth change listener
+        // Login success will trigger the useEffect for redirection
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Authentication error:", error);
+      // Error handling is done in the auth context, but we can add a fallback here
+      if (!toast.error) {
+        alert(`Authentication failed: ${error.message || "Unknown error"}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +82,16 @@ const Login = () => {
     setName("");
     setPassword("");
   };
+
+  // Show a loading state if we're checking auth
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Checking authentication...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary/50 px-4">
@@ -130,7 +155,7 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || status === 'error'}>
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader className="h-4 w-4 animate-spin" />

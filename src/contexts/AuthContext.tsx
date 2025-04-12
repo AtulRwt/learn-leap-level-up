@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (error) {
               console.error("Error fetching user profile:", error);
               setUser(null);
+              toast.error("Failed to load your profile");
             } else if (profile) {
               console.log("User profile fetched:", profile);
               setUser({
@@ -72,9 +73,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 role: profile.role as "admin" | "student",
                 avatar_url: profile.avatar_url
               });
+              
+              if (event === "SIGNED_IN") {
+                toast.success(`Welcome back, ${profile.name || "User"}!`);
+              }
             } else {
               console.error("No profile found for user");
               setUser(null);
+              toast.error("No profile found for your account");
             }
           } catch (err) {
             console.error("Error in auth state change handler:", err);
@@ -82,6 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } else {
           setUser(null);
+          if (event === "SIGNED_OUT") {
+            toast.success("You have been signed out");
+          }
         }
 
         setLoading(false);
@@ -161,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log("Login successful:", data.user?.email);
-      toast.success("Login successful!");
       
       // The rest will be handled by the auth state change listener
     } catch (error: any) {

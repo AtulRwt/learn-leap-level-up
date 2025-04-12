@@ -11,6 +11,7 @@ const Index = () => {
   useEffect(() => {
     // Only redirect if we're connected
     if (status === 'connected') {
+      console.log("Database connection successful, redirecting to login");
       // Redirect to login page
       navigate('/login');
     }
