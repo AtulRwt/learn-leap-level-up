@@ -168,14 +168,6 @@ const Login = () => {
                 </p>
               )}
             </div>
-            {!isRegistering && (
-              <p className="w-full text-center text-sm text-muted-foreground">
-                Test accounts:<br />
-                <span className="font-semibold">admin@example.com / admin123</span><br />
-                <span className="font-semibold">student@example.com / student123</span><br />
-                <span className="font-semibold">premium@example.com / premium123</span>
-              </p>
-            )}
           </CardFooter>
         </Card>
       </div>
