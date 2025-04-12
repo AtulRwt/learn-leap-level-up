@@ -12,11 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  Files,
-  Bell,
-  CalendarDays,
-  FolderOpen,
-  MessageCircle
+  Files
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -52,24 +48,9 @@ const Sidebar = ({ className }: SidebarProps) => {
       icon: User,
     },
     {
-      title: "Resources Directory",
-      href: "/resources-directory",
-      icon: FolderOpen,
-    },
-    {
-      title: "Forums",
-      href: "/forums",
-      icon: MessageCircle,
-    },
-    {
-      title: "Calendar",
-      href: "/calendar",
-      icon: CalendarDays,
-    },
-    {
-      title: "Notifications",
-      href: "/notifications",
-      icon: Bell,
+      title: "Resources",
+      href: "/premium",
+      icon: BookOpen,
     },
     {
       title: "Exam Prep",
@@ -89,7 +70,7 @@ const Sidebar = ({ className }: SidebarProps) => {
     },
     {
       title: "Settings",
-      href: "/settings",
+      href: "/profile",
       icon: Settings,
     },
   ];
@@ -124,7 +105,7 @@ const Sidebar = ({ className }: SidebarProps) => {
           )}
         </Button>
       </div>
-      <div className="py-4 overflow-y-auto h-[calc(100vh-4rem)]">
+      <div className="py-4">
         <nav className="space-y-1 px-2">
           {navItems
             .filter(item => !item.adminOnly || user?.role === "admin")

@@ -25,8 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, File, Link, Image } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation } from "@tanstack/react-query";
 
 const resourceTypes = [
   { value: "notes", label: "Notes" },
@@ -46,72 +44,13 @@ const UploadResource = () => {
   const [textContent, setTextContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("You must be logged in to upload a resource");
-      
-      let fileUrl = null;
-      
-      // Upload file if provided
-      if (uploadType === 'file' && file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-        
-        const { data, error } = await supabase.storage
-          .from('resources')
-          .upload(filePath, file);
-          
-        if (error) throw new Error(`Error uploading file: ${error.message}`);
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('resources')
-          .getPublicUrl(filePath);
-          
-        fileUrl = publicUrl;
-      }
-      
-      // Create resource entry
-      const { data, error } = await supabase
-        .from('resources')
-        .insert({
-          title,
-          description,
-          resource_type: type,
-          user_id: user.id,
-          content: uploadType === 'text' ? textContent : null,
-          file_url: uploadType === 'file' ? fileUrl : null,
-          external_url: uploadType === 'link' ? link : null,
-        })
-        .select();
-        
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Resource submitted for review!");
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setType("");
-      setFile(null);
-      setLink("");
-      setTextContent("");
-      setIsSubmitting(false);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-      setIsSubmitting(false);
-    }
-  });
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -140,8 +79,18 @@ const UploadResource = () => {
       return;
     }
 
-    // Submit resource
-    uploadMutation.mutate();
+    // Simulate upload process
+    setTimeout(() => {
+      toast.success("Resource submitted for review!");
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setType("");
+      setFile(null);
+      setLink("");
+      setTextContent("");
+      setIsSubmitting(false);
+    }, 1500);
   };
 
   const renderUploadSection = () => {

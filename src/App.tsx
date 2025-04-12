@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Pages
@@ -19,10 +19,6 @@ import ContactAdmin from "@/pages/ContactAdmin";
 import ResourcesManagement from "@/pages/ResourcesManagement";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
-import ResourcesDirectory from "@/pages/ResourcesDirectory";
-import Calendar from "@/pages/Calendar";
-import Forums from "@/pages/Forums";
-import Notifications from "@/pages/Notifications";
 
 // Components
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -50,11 +46,6 @@ const App = () => (
                 <Route path="/premium" element={<PremiumContent />} />
                 <Route path="/exams" element={<ExamPrep />} />
                 <Route path="/contact" element={<ContactAdmin />} />
-                <Route path="/resources-directory" element={<ResourcesDirectory />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/forums" element={<Forums />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/settings" element={<UserProfile />} /> {/* Using UserProfile for settings temporarily */}
               </Route>
               
               {/* Admin Routes */}
