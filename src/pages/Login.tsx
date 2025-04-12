@@ -16,7 +16,7 @@ const Login = () => {
   const [name, setName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register, isAuthenticated, user } = useAuth();
+  const { login, register, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { status } = useSupabaseStatus();
 
@@ -62,16 +62,16 @@ const Login = () => {
         await register(email, password, name);
       } else {
         console.log("Submitting login form with:", email);
-        await login(email, password);
-        // Login success will trigger the useEffect for redirection
+        const success = await login(email, password);
+        
+        if (!success) {
+          // If login returns false, it means there was an error
+          setIsLoading(false);
+        }
+        // If success is true, the redirection will happen through useEffect
       }
     } catch (error: any) {
-      console.error("Authentication error:", error);
-      // Error handling is done in the auth context, but we can add a fallback here
-      if (!toast.error) {
-        alert(`Authentication failed: ${error.message || "Unknown error"}`);
-      }
-    } finally {
+      console.error("Authentication error in component:", error);
       setIsLoading(false);
     }
   };
@@ -84,7 +84,7 @@ const Login = () => {
   };
 
   // Show a loading state if we're checking auth
-  if (isAuthenticated === null) {
+  if (authLoading && !isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
@@ -155,7 +155,7 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading || status === 'error'}>
+              <Button type="submit" className="w-full" disabled={isLoading || status === 'error' || authLoading}>
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader className="h-4 w-4 animate-spin" />

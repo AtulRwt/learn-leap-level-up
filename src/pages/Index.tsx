@@ -12,8 +12,8 @@ const Index = () => {
     // Only redirect if we're connected
     if (status === 'connected') {
       console.log("Database connection successful, redirecting to login");
-      // Redirect to login page
-      navigate('/login');
+      // Redirect to login page after successful connection
+      navigate('/login', { replace: true });
     }
   }, [navigate, status]);
 

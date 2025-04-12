@@ -19,7 +19,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>; // Return boolean to indicate success/failure
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isAuthenticated: false,
   loading: true,
-  login: async () => {},
+  login: async () => false,
   register: async () => {},
   logout: async () => {},
 });
@@ -85,15 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (err) {
             console.error("Error in auth state change handler:", err);
             setUser(null);
+          } finally {
+            setLoading(false);
           }
         } else {
           setUser(null);
           if (event === "SIGNED_OUT") {
             toast.success("You have been signed out");
           }
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
@@ -137,10 +138,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (err) {
             console.error("Error fetching profile in session check:", err);
+          } finally {
+            setLoading(false);
           }
+        } else {
+          setLoading(false);
         }
-        
-        setLoading(false);
       } catch (err) {
         console.error("Error checking session:", err);
         setLoading(false);
@@ -155,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Login function
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log("Attempting login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -166,16 +169,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error("Login error:", error.message);
         toast.error(error.message || "Failed to login");
-        throw error;
+        return false;
       }
       
       console.log("Login successful:", data.user?.email);
-      
+      return true;
       // The rest will be handled by the auth state change listener
     } catch (error: any) {
       console.error("Login exception:", error.message);
       toast.error(error.message || "Failed to login");
-      throw error;
+      return false;
     }
   };
 

@@ -29,7 +29,17 @@ export const useSupabaseStatus = () => {
     };
 
     checkConnection();
-  }, []);
+
+    // Add a timeout to retry the connection check if it's still in 'checking' state after 10 seconds
+    const timeoutId = setTimeout(() => {
+      if (status === 'checking') {
+        console.log("Connection check timed out, retrying...");
+        checkConnection();
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeoutId);
+  }, [status]);
 
   return { status, error };
 };
