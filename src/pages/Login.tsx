@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
 
@@ -21,12 +21,24 @@ const Login = () => {
   // Redirect if already authenticated
   React.useEffect(() => {
     if (isAuthenticated) {
+      console.log("User authenticated as:", user?.role, user?.email);
       navigate(user?.role === "admin" ? "/admin" : "/home");
     }
   }, [isAuthenticated, navigate, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+    
+    if (!password.trim()) {
+      toast.error("Please enter your password");
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -38,7 +50,9 @@ const Login = () => {
         }
         await register(email, password, name);
       } else {
+        console.log("Submitting login form with:", email);
         await login(email, password);
+        // Login success will be handled by the auth change listener
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -49,6 +63,9 @@ const Login = () => {
 
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
+    // Clear form on mode toggle
+    setName("");
+    setPassword("");
   };
 
   return (
@@ -114,9 +131,14 @@ const Login = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading 
-                  ? (isRegistering ? "Creating Account..." : "Signing in...") 
-                  : (isRegistering ? "Create Account" : "Sign in")}
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader className="h-4 w-4 animate-spin" />
+                    {isRegistering ? "Creating Account..." : "Signing in..."}
+                  </span>
+                ) : (
+                  isRegistering ? "Create Account" : "Sign in"
+                )}
               </Button>
             </form>
           </CardContent>
