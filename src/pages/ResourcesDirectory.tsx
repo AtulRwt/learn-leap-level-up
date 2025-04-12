@@ -27,7 +27,8 @@ const ResourcesDirectory = () => {
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['approved-resources'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First fetch resources
+      const { data: resourcesData, error: resourcesError } = await supabase
         .from('resources')
         .select(`
           id,
@@ -38,19 +39,51 @@ const ResourcesDirectory = () => {
           external_url,
           content,
           created_at,
-          profiles:user_id (name)
+          user_id
         `)
         .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching resources:', error);
+      if (resourcesError) {
+        console.error('Error fetching resources:', resourcesError);
         return [];
       }
 
-      return data.map(resource => ({
+      // Then fetch user profiles for all the user_ids we've collected
+      const userIds = resourcesData.map(resource => resource.user_id);
+      
+      // Only fetch profiles if we have resources
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds);
+        
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          // Still return resources even if profile fetch fails
+          return resourcesData.map(resource => ({
+            ...resource,
+            user_name: 'Unknown'
+          }));
+        }
+
+        // Create a map of user_id to name for easier lookup
+        const userNameMap = new Map();
+        profilesData.forEach(profile => {
+          userNameMap.set(profile.id, profile.name || 'Unknown');
+        });
+
+        // Merge the resources with user names
+        return resourcesData.map(resource => ({
+          ...resource,
+          user_name: userNameMap.get(resource.user_id) || 'Unknown'
+        }));
+      }
+
+      return resourcesData.map(resource => ({
         ...resource,
-        user_name: resource.profiles?.name || 'Unknown'
+        user_name: 'Unknown'
       }));
     }
   });

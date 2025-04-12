@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,32 +55,54 @@ const ResourcesManagement = () => {
   const [dialogType, setDialogType] = useState<"view" | "delete">("view");
   const queryClient = useQueryClient();
   
-  // Fetch resources with user information
   const { data: resources = [], isLoading } = useQuery({
     queryKey: ['resources'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: resourcesData, error: resourcesError } = await supabase
         .from('resources')
-        .select(`
-          *,
-          profiles:user_id (name)
-        `)
+        .select(`*`)
         .order('created_at', { ascending: false });
 
-      if (error) {
+      if (resourcesError) {
         toast.error('Error fetching resources');
-        console.error('Error fetching resources:', error);
+        console.error('Error fetching resources:', resourcesError);
         return [];
       }
 
-      return data.map(resource => ({
+      const userIds = resourcesData.map(resource => resource.user_id);
+      
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds);
+        
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          return resourcesData.map(resource => ({
+            ...resource,
+            user_name: 'Unknown User'
+          }));
+        }
+
+        const userNameMap = new Map();
+        profilesData.forEach(profile => {
+          userNameMap.set(profile.id, profile.name || 'Unknown User');
+        });
+
+        return resourcesData.map(resource => ({
+          ...resource,
+          user_name: userNameMap.get(resource.user_id) || 'Unknown User'
+        }));
+      }
+
+      return resourcesData.map(resource => ({
         ...resource,
-        user_name: resource.profiles?.name || 'Unknown User'
+        user_name: 'Unknown User'
       }));
     }
   });
 
-  // Approve resource mutation
   const approveMutation = useMutation({
     mutationFn: async ({ resourceId, approved }: { resourceId: string, approved: boolean }) => {
       const { error } = await supabase
@@ -91,7 +112,6 @@ const ResourcesManagement = () => {
         
       if (error) throw error;
       
-      // Create notification for the user
       if (approved) {
         await supabase.rpc('approve_resource', {
           resource_id: resourceId
@@ -110,7 +130,6 @@ const ResourcesManagement = () => {
     }
   });
 
-  // Delete resource mutation
   const deleteMutation = useMutation({
     mutationFn: async (resourceId: string) => {
       const { error } = await supabase
@@ -341,7 +360,6 @@ const ResourcesManagement = () => {
         </div>
       </div>
 
-      {/* View Resource Dialog */}
       {dialogType === "view" && selectedResource && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-lg">
@@ -454,7 +472,6 @@ const ResourcesManagement = () => {
         </Dialog>
       )}
 
-      {/* Delete Confirmation Dialog */}
       {dialogType === "delete" && selectedResource && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent>
