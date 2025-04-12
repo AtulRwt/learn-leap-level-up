@@ -20,13 +20,20 @@ const Login = () => {
   const navigate = useNavigate();
   const { status } = useSupabaseStatus();
 
+  console.log("Login component rendered with auth state:", { isAuthenticated, user, authLoading, status });
+
+  // Debug user state on mount
+  useEffect(() => {
+    console.log("Login component mounted, auth state:", { isAuthenticated, user, authLoading });
+  }, []);
+
   // Improved redirection logic with debugging
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log("Redirecting authenticated user:", user.role, user.email);
+      console.log("User authenticated, redirecting:", user.role, user.email);
       const redirectPath = user.role === "admin" ? "/admin" : "/home";
       console.log("Redirecting to:", redirectPath);
-      navigate(redirectPath);
+      navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, navigate, user]);
 
@@ -39,6 +46,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted with:", { email, password, isRegistering });
     
     if (!email.trim()) {
       toast.error("Please enter your email");
@@ -59,19 +67,26 @@ const Login = () => {
           setIsLoading(false);
           return;
         }
+        
+        console.log("Attempting to register with:", { email, name });
         await register(email, password, name);
+        // Registration success handling is managed by the auth context
       } else {
-        console.log("Submitting login form with:", email);
+        console.log("Attempting to login with:", email);
         const success = await login(email, password);
         
         if (!success) {
+          console.log("Login failed, resetting loading state");
           // If login returns false, it means there was an error
           setIsLoading(false);
+        } else {
+          console.log("Login successful, awaiting redirect...");
+          // Successful login will trigger the useEffect above for redirection
         }
-        // If success is true, the redirection will happen through useEffect
       }
     } catch (error: any) {
       console.error("Authentication error in component:", error);
+      toast.error(error.message || "Authentication failed");
       setIsLoading(false);
     }
   };
@@ -83,12 +98,14 @@ const Login = () => {
     setPassword("");
   };
 
-  // Show a loading state if we're checking auth
+  // Show debug info for persistent loading state
   if (authLoading && !isLoading) {
+    console.log("Showing auth checking state");
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Checking authentication...</span>
+        <span className="mt-4">Checking authentication status...</span>
+        <span className="text-sm text-muted-foreground mt-2">This should only take a moment.</span>
       </div>
     );
   }
@@ -124,6 +141,7 @@ const Login = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    disabled={isLoading || status === 'error'}
                   />
                 </div>
               )}
@@ -136,6 +154,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading || status === 'error'}
                 />
               </div>
               <div className="space-y-2">
@@ -153,9 +172,14 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading || status === 'error'}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading || status === 'error' || authLoading}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading || status === 'error' || authLoading}
+              >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Loader className="h-4 w-4 animate-spin" />
@@ -176,6 +200,7 @@ const Login = () => {
                     type="button" 
                     onClick={toggleMode}
                     className="text-primary hover:underline font-medium"
+                    disabled={isLoading}
                   >
                     Sign in
                   </button>
@@ -187,11 +212,19 @@ const Login = () => {
                     type="button" 
                     onClick={toggleMode}
                     className="text-primary hover:underline font-medium"
+                    disabled={isLoading}
                   >
                     Create one
                   </button>
                 </p>
               )}
+            </div>
+            {/* Debug section - only in development */}
+            <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+              <p>DB Status: {status}</p>
+              <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
+              <p>Form Loading: {isLoading ? 'Yes' : 'No'}</p>
+              <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
             </div>
           </CardFooter>
         </Card>

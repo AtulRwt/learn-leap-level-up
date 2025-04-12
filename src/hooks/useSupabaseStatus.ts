@@ -9,6 +9,7 @@ export const useSupabaseStatus = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
+        console.log("Checking Supabase connection...");
         // Simple query to check if we can connect to Supabase
         const { data, error } = await supabase.from('profiles').select('count').limit(1);
         
@@ -30,16 +31,16 @@ export const useSupabaseStatus = () => {
 
     checkConnection();
 
-    // Add a timeout to retry the connection check if it's still in 'checking' state after 10 seconds
+    // Add a timeout to retry the connection check if it's still in 'checking' state after 5 seconds
     const timeoutId = setTimeout(() => {
       if (status === 'checking') {
         console.log("Connection check timed out, retrying...");
         checkConnection();
       }
-    }, 10000);
+    }, 5000); // Reduced timeout from 10 seconds to 5 seconds
 
     return () => clearTimeout(timeoutId);
-  }, [status]);
+  }, []);  // Removed status dependency to prevent infinite loops
 
   return { status, error };
 };
