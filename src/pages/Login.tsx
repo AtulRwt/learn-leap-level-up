@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Loader } from "lucide-react";
+import { BookOpen, Loader, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
 import { useSupabaseStatus } from "@/hooks/useSupabaseStatus";
@@ -18,7 +18,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, register, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { status } = useSupabaseStatus();
+  const { status, error: dbError } = useSupabaseStatus();
 
   console.log("Login component rendered with auth state:", { isAuthenticated, user, authLoading, status });
 
@@ -36,13 +36,6 @@ const Login = () => {
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, navigate, user]);
-
-  // Check database connection status
-  useEffect(() => {
-    if (status === 'error') {
-      toast.error("Unable to connect to the database. Please try again later.");
-    }
-  }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +112,19 @@ const Login = () => {
             <span className="text-2xl font-bold text-primary">LearnLeap</span>
           </div>
         </div>
+        
+        {status === 'error' && (
+          <div className="mb-6">
+            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-lg flex items-start mb-2">
+              <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Database connection issue</p>
+                <p className="text-sm">Some features may be limited</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
@@ -141,7 +147,7 @@ const Login = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    disabled={isLoading || status === 'error'}
+                    disabled={isLoading}
                   />
                 </div>
               )}
@@ -154,7 +160,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={isLoading || status === 'error'}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -172,13 +178,13 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading || status === 'error'}
+                  disabled={isLoading}
                 />
               </div>
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isLoading || status === 'error' || authLoading}
+                disabled={isLoading || authLoading}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">

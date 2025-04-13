@@ -14,8 +14,15 @@ const Index = () => {
     // Only redirect if we're connected
     if (status === 'connected') {
       console.log("Database connection successful, redirecting to login");
-      // Redirect to login page after successful connection
       navigate('/login', { replace: true });
+    } else if (status === 'error') {
+      // Automatically redirect to login page after 3 seconds on error
+      console.log("Database connection error, redirecting to login in 3 seconds");
+      const timeout = setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
     }
   }, [navigate, status]);
 
@@ -40,7 +47,7 @@ const Index = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Error</AlertTitle>
             <AlertDescription>
-              There appears to be an issue with the database configuration
+              There appears to be an issue with the database configuration. Redirecting to login...
             </AlertDescription>
           </Alert>
           
@@ -60,7 +67,7 @@ const Index = () => {
               onClick={handleContinueAnyway} 
               className="w-full"
             >
-              Continue to Login Anyway
+              Continue to Login Now
             </Button>
           </div>
           

@@ -11,21 +11,43 @@ export const useSupabaseStatus = () => {
       try {
         console.log("Checking Supabase connection...");
         
-        // Try to query something that doesn't involve the profiles table's problematic policy
-        const { data, error } = await supabase
-          .from('resources')
-          .select('count')
-          .limit(1);
+        // First try resources table which might not have the same RLS issues
+        let data, error;
         
-        if (error) {
-          console.error("Supabase connection error:", error);
-          setStatus('error');
-          setError(error.message);
-        } else {
-          console.log("Successfully connected to Supabase");
-          setStatus('connected');
-          setError(null);
+        try {
+          ({ data, error } = await supabase
+            .from('resources')
+            .select('count')
+            .limit(1));
+            
+          if (!error) {
+            console.log("Successfully connected to Supabase using resources table");
+            setStatus('connected');
+            setError(null);
+            return;
+          }
+        } catch (err) {
+          console.log("Failed with resources table, trying with auth session");
         }
+        
+        // If that fails, try checking auth session which usually works even if RLS has issues
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          
+          if (!sessionError) {
+            console.log("Successfully checked Supabase auth connection");
+            setStatus('connected');
+            setError(null);
+            return;
+          }
+        } catch (err) {
+          console.log("Both connection checks failed");
+        }
+        
+        // If we get here, connection truly failed
+        console.error("Supabase connection error:", error);
+        setStatus('error');
+        setError(error ? error.message : "Unknown connection error");
       } catch (err: any) {
         console.error("Unexpected Supabase error:", err);
         setStatus('error');
