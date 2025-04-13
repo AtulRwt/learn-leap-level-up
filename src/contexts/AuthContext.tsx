@@ -19,7 +19,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>; // Return boolean to indicate success/failure
+  login: (email: string, password: string) => Promise<boolean>; 
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
