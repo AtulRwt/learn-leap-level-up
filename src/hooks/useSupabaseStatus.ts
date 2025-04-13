@@ -11,26 +11,7 @@ export const useSupabaseStatus = () => {
       try {
         console.log("Checking Supabase connection...");
         
-        // First try resources table which might not have the same RLS issues
-        let data, error;
-        
-        try {
-          ({ data, error } = await supabase
-            .from('resources')
-            .select('count')
-            .limit(1));
-            
-          if (!error) {
-            console.log("Successfully connected to Supabase using resources table");
-            setStatus('connected');
-            setError(null);
-            return;
-          }
-        } catch (err) {
-          console.log("Failed with resources table, trying with auth session");
-        }
-        
-        // If that fails, try checking auth session which usually works even if RLS has issues
+        // First try to check the session which is less likely to have RLS issues
         try {
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
@@ -41,15 +22,50 @@ export const useSupabaseStatus = () => {
             return;
           }
         } catch (err) {
-          console.log("Both connection checks failed");
+          console.log("Auth session check failed, trying another method");
+        }
+        
+        // Try public profiles table which should have fixed RLS now
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('count')
+            .limit(1);
+            
+          if (!error) {
+            console.log("Successfully connected to Supabase using profiles table");
+            setStatus('connected');
+            setError(null);
+            return;
+          } else {
+            throw error;
+          }
+        } catch (err: any) {
+          console.error("Profile table connection failed:", err);
+          // Continue to next check if this fails
+        }
+        
+        // Final fallback - try resources table
+        try {
+          const { data, error } = await supabase
+            .from('resources')
+            .select('count')
+            .limit(1);
+            
+          if (!error) {
+            console.log("Successfully connected to Supabase using resources table");
+            setStatus('connected');
+            setError(null);
+            return;
+          }
+        } catch (err) {
+          console.log("All connection checks failed");
         }
         
         // If we get here, connection truly failed
-        console.error("Supabase connection error:", error);
-        setStatus('error');
-        setError(error ? error.message : "Unknown connection error");
+        throw new Error("All connection attempts failed");
       } catch (err: any) {
-        console.error("Unexpected Supabase error:", err);
+        console.error("Supabase connection error:", err);
         setStatus('error');
         setError(err.message || 'Unknown error connecting to database');
       }
@@ -66,7 +82,7 @@ export const useSupabaseStatus = () => {
     }, 5000);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [status]);
 
   return { status, error };
 };

@@ -11,16 +11,12 @@ const Index = () => {
   const { status, error } = useSupabaseStatus();
   
   useEffect(() => {
-    // Only redirect if we're connected
-    if (status === 'connected') {
-      console.log("Database connection successful, redirecting to login");
-      navigate('/login', { replace: true });
-    } else if (status === 'error') {
-      // Automatically redirect to login page after 3 seconds on error
-      console.log("Database connection error, redirecting to login in 3 seconds");
+    // Always redirect to login after a brief delay, regardless of DB status
+    if (status !== 'checking') {
       const timeout = setTimeout(() => {
+        console.log("Redirecting to login from Index page");
         navigate('/login', { replace: true });
-      }, 3000);
+      }, status === 'error' ? 2000 : 500);
       
       return () => clearTimeout(timeout);
     }
@@ -57,22 +53,15 @@ const Index = () => {
           
           <div className="flex flex-col space-y-2">
             <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline"
-              className="w-full"
-            >
-              Try Again
-            </Button>
-            <Button 
               onClick={handleContinueAnyway} 
               className="w-full"
             >
-              Continue to Login Now
+              Continue to Login
             </Button>
           </div>
           
           <p className="text-xs text-muted-foreground mt-4">
-            Note: Some features may be limited without a working database connection.
+            The app may still work with limited functionality.
           </p>
         </div>
       )}

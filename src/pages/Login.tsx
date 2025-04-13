@@ -18,9 +18,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login, register, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { status, error: dbError } = useSupabaseStatus();
+  const { status: dbStatus, error: dbError } = useSupabaseStatus();
 
-  console.log("Login component rendered with auth state:", { isAuthenticated, user, authLoading, status });
+  console.log("Login component rendered with auth state:", { isAuthenticated, user, authLoading, dbStatus });
 
   // Debug user state on mount
   useEffect(() => {
@@ -113,13 +113,13 @@ const Login = () => {
           </div>
         </div>
         
-        {status === 'error' && (
+        {dbStatus === 'error' && (
           <div className="mb-6">
-            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-lg flex items-start mb-2">
-              <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-start mb-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium">Database connection issue</p>
-                <p className="text-sm">Some features may be limited</p>
+                <p className="font-medium">Database connection limited</p>
+                <p className="text-sm">You can still log in, but some features may be restricted</p>
               </div>
             </div>
           </div>
@@ -227,7 +227,7 @@ const Login = () => {
             </div>
             {/* Debug section - only in development */}
             <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
-              <p>DB Status: {status}</p>
+              <p>DB Status: {dbStatus}</p>
               <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
               <p>Form Loading: {isLoading ? 'Yes' : 'No'}</p>
               <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
