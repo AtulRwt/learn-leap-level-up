@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ const Login = () => {
         </div>
         
         {dbStatus === 'error' && (
-          <Alert variant="warning" className="mb-6 bg-yellow-50 border-yellow-200">
+          <Alert variant="default" className="mb-6 bg-yellow-50 border-yellow-200">
             <AlertCircle className="h-5 w-5 text-yellow-600" />
             <AlertTitle>Connection Limited</AlertTitle>
             <AlertDescription className="text-yellow-700">
