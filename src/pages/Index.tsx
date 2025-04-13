@@ -16,7 +16,7 @@ const Index = () => {
       const timeout = setTimeout(() => {
         console.log("Redirecting to login from Index page");
         navigate('/login', { replace: true });
-      }, status === 'error' ? 2000 : 500);
+      }, status === 'error' ? 1500 : 500);
       
       return () => clearTimeout(timeout);
     }
@@ -41,13 +41,13 @@ const Index = () => {
         <div className="text-center space-y-4 max-w-md">
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Connection Error</AlertTitle>
+            <AlertTitle>Connection Warning</AlertTitle>
             <AlertDescription>
-              There appears to be an issue with the database configuration. Redirecting to login...
+              There appears to be an issue with the database connection. Some features may be limited.
             </AlertDescription>
           </Alert>
           
-          <div className="p-4 bg-destructive/10 rounded-md text-left">
+          <div className="p-4 bg-destructive/10 rounded-md text-left max-h-40 overflow-y-auto">
             <p className="font-mono text-sm break-words">{error}</p>
           </div>
           
@@ -61,7 +61,7 @@ const Index = () => {
           </div>
           
           <p className="text-xs text-muted-foreground mt-4">
-            The app may still work with limited functionality.
+            The app will continue with cached data where possible.
           </p>
         </div>
       )}

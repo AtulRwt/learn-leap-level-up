@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Loader, AlertTriangle } from "lucide-react";
+import { BookOpen, Loader, AlertTriangle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/lib/toast";
 import { useSupabaseStatus } from "@/hooks/useSupabaseStatus";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,12 +22,10 @@ const Login = () => {
 
   console.log("Login component rendered with auth state:", { isAuthenticated, user, authLoading, dbStatus });
 
-  // Debug user state on mount
   useEffect(() => {
     console.log("Login component mounted, auth state:", { isAuthenticated, user, authLoading });
   }, []);
 
-  // Improved redirection logic with debugging
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log("User authenticated, redirecting:", user.role, user.email);
@@ -62,19 +60,26 @@ const Login = () => {
         }
         
         console.log("Attempting to register with:", { email, name });
+        
+        if (dbStatus === 'error') {
+          toast.warning("Database connection issues detected. Registration may fail.");
+        }
+        
         await register(email, password, name);
-        // Registration success handling is managed by the auth context
       } else {
         console.log("Attempting to login with:", email);
+        
+        if (dbStatus === 'error') {
+          toast.warning("Database connection issues detected. Limited functionality available.");
+        }
+        
         const success = await login(email, password);
         
         if (!success) {
           console.log("Login failed, resetting loading state");
-          // If login returns false, it means there was an error
           setIsLoading(false);
         } else {
           console.log("Login successful, awaiting redirect...");
-          // Successful login will trigger the useEffect above for redirection
         }
       }
     } catch (error: any) {
@@ -86,12 +91,10 @@ const Login = () => {
 
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
-    // Clear form on mode toggle
     setName("");
     setPassword("");
   };
 
-  // Show debug info for persistent loading state
   if (authLoading && !isLoading) {
     console.log("Showing auth checking state");
     return (
@@ -114,15 +117,13 @@ const Login = () => {
         </div>
         
         {dbStatus === 'error' && (
-          <div className="mb-6">
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-start mb-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Database connection limited</p>
-                <p className="text-sm">You can still log in, but some features may be restricted</p>
-              </div>
-            </div>
-          </div>
+          <Alert variant="warning" className="mb-6 bg-yellow-50 border-yellow-200">
+            <AlertCircle className="h-5 w-5 text-yellow-600" />
+            <AlertTitle>Connection Limited</AlertTitle>
+            <AlertDescription className="text-yellow-700">
+              Database connection issues detected. Some features may be limited.
+            </AlertDescription>
+          </Alert>
         )}
         
         <Card className="shadow-lg">
@@ -225,13 +226,15 @@ const Login = () => {
                 </p>
               )}
             </div>
-            {/* Debug section - only in development */}
-            <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
-              <p>DB Status: {dbStatus}</p>
-              <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
-              <p>Form Loading: {isLoading ? 'Yes' : 'No'}</p>
-              <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
-            </div>
+            
+            {process.env.NODE_ENV !== "production" && (
+              <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                <p>DB Status: {dbStatus}</p>
+                <p>Auth Loading: {authLoading ? 'Yes' : 'No'}</p>
+                <p>Form Loading: {isLoading ? 'Yes' : 'No'}</p>
+                <p>Is Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
+              </div>
+            )}
           </CardFooter>
         </Card>
       </div>
