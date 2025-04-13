@@ -2,7 +2,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseStatus } from '@/hooks/useSupabaseStatus';
-import { Loader } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Loader, AlertCircle } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -17,6 +19,11 @@ const Index = () => {
     }
   }, [navigate, status]);
 
+  const handleContinueAnyway = () => {
+    console.log("User chose to continue despite database error");
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       {status === 'checking' && (
@@ -29,24 +36,37 @@ const Index = () => {
       
       {status === 'error' && (
         <div className="text-center space-y-4 max-w-md">
-          <h1 className="text-2xl font-bold text-destructive">Connection Error</h1>
-          <p className="text-muted-foreground">
-            Unable to connect to the database. This could be due to:
-          </p>
-          <ul className="list-disc text-left ml-8">
-            <li>Network connectivity issues</li>
-            <li>Database service unavailability</li>
-            <li>Authentication configuration problems</li>
-          </ul>
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              There appears to be an issue with the database configuration
+            </AlertDescription>
+          </Alert>
+          
           <div className="p-4 bg-destructive/10 rounded-md text-left">
-            <p className="font-mono text-sm">{error}</p>
+            <p className="font-mono text-sm break-words">{error}</p>
           </div>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-          >
-            Try Again
-          </button>
+          
+          <div className="flex flex-col space-y-2">
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="w-full"
+            >
+              Try Again
+            </Button>
+            <Button 
+              onClick={handleContinueAnyway} 
+              className="w-full"
+            >
+              Continue to Login Anyway
+            </Button>
+          </div>
+          
+          <p className="text-xs text-muted-foreground mt-4">
+            Note: Some features may be limited without a working database connection.
+          </p>
         </div>
       )}
     </div>
